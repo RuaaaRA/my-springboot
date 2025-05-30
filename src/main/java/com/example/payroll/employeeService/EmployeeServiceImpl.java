@@ -54,7 +54,8 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public ResponseEntity<?> newEmployee(EmployeeDTO newEmployee) {
         Department dep = departmentRepository.findByName(newEmployee.getDepartmentName())
-                .orElseThrow(() -> new ResourceNotFoundException("Department with Name " + newEmployee.getDepartmentName() + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Department with Name " +
+                 newEmployee.getDepartmentName() + " not found."));
 
         Employee employee = EmployeeMapper.toEntity(newEmployee, dep, passwordEncoder, userRepository);
         employee = repository.save(employee);
@@ -95,7 +96,8 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public ResponseEntity<?> save(EmployeeDTO newEmployee, Long id) {
         Department dep = departmentRepository.findByName(newEmployee.getDepartmentName())
-                .orElseThrow(() -> new ResourceNotFoundException("Department with Name " + newEmployee.getDepartmentName() + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Department with Name " + newEmployee.getDepartmentName() 
+                + " not found."));
 
         Employee newEmploye = EmployeeMapper.toEntity(newEmployee, dep, passwordEncoder, userRepository);
         Employee updatedEmployee = repository.findById(id)

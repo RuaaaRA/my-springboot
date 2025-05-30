@@ -7,7 +7,8 @@ import com.example.payroll.security.UserRepository;
 
 public class EmployeeMapper {
 
-    public static Employee toEntity(EmployeeDTO employeeDTO, Department dep, PasswordEncoder passwordEncoder, UserRepository userRepository) {
+    public static Employee toEntity(EmployeeDTO employeeDTO, Department dep, 
+    PasswordEncoder passwordEncoder, UserRepository userRepository) {
         Employee employee = new Employee();
         employee.setName(employeeDTO.getName());
         employee.setRole(employeeDTO.getRole());
