@@ -23,7 +23,8 @@ jobs:
     - name: 🛠️ Make mvnw executable
       run: chmod +x mvnw
 
-    - name: 🧪 Build & Test with Maven
+    - name: 🧪 Build & Test with Maven (including Checkstyle)
+
       run: ./mvnw clean verify
 
     - name: 📦 Build Docker Image
