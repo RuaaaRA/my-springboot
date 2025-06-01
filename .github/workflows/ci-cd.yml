@@ -80,5 +80,5 @@ jobs:
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "❌ Build or Deploy failed on ${{ env.ENVIRONMENT }}"
           to: "202201654@bethlehem.edu"      # غيّرها لبريدك الحقيقي
-          from: "202201654@bethlehem.edu"    # غيّرها لبريدك الحقيقي أو بريد مخصص للإرسال
+          from: "ci-cd@yourdomain.com"
           body: "The CI/CD pipeline failed during build or deployment for the ${{ env.ENVIRONMENT }} environment. Please check logs."
