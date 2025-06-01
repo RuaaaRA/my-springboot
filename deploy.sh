@@ -2,14 +2,14 @@
 set -e
 
 ENV=$1
-echo "Starting deployment to $ENV environment"
+echo "🚀 Starting deployment to $ENV environment"
 
 # احفظ ID الحاوية القديمة (لو موجودة)
 OLD_CONTAINER_ID=$(docker ps -q -f name=my-app-container || true)
 
 # إيقاف وحذف الحاوية القديمة لو موجودة
 if [ -n "$OLD_CONTAINER_ID" ]; then
-  echo "Stopping and removing old container $OLD_CONTAINER_ID"
+  echo "🛑 Stopping and removing old container $OLD_CONTAINER_ID"
   docker stop my-app-container
   docker rm my-app-container
 fi

@@ -39,8 +39,10 @@ jobs:
       - name: Build Project with Maven
         run: mvn clean package
 
-      - name: Build Docker Image
-        run: docker build -t my-app:latest .
+      - name: Build Docker Image (latest + previous)
+        run: |
+          docker tag my-app:latest my-app:previous || true
+          docker build -t my-app:latest .
 
       - name: Deploy to ${{ env.ENVIRONMENT }}
         run: |
