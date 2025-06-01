@@ -49,7 +49,13 @@ jobs:
           echo "Deploying to $ENVIRONMENT environment"
           chmod +x ./deploy.sh
           chmod +x ./rollback.sh
-          ./deploy.sh $ENVIRONMENT || ./rollback.sh $ENVIRONMENT
+          if ./deploy.sh $ENVIRONMENT; then
+            echo "Deployment succeeded"
+          else
+            echo "Deployment failed, starting rollback"
+            ./rollback.sh $ENVIRONMENT
+            exit 1
+          fi
 
       - name: Send success email notification
         if: success()
