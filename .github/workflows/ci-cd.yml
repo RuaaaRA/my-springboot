@@ -33,9 +33,10 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
+          distribution: 'temurin'       # ✅ مضاف لحل الخطأ
           java-version: '17'
 
-      - name: Build Project
+      - name: Build Project with Maven
         run: mvn clean package
 
       - name: Build Docker Image
