@@ -47,3 +47,30 @@ jobs:
           echo "Deploying to $ENVIRONMENT environment"
           chmod +x ./deploy.sh
           ./deploy.sh $ENVIRONMENT || ./rollback.sh $ENVIRONMENT
+
+      - name: Send success email notification
+        if: success()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.MAIL_HOST }}
+          server_port: ${{ secrets.MAIL_PORT }}
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "✅ Build & Deploy succeeded on ${{ env.ENVIRONMENT }}"
+          to: "your-email@example.com"
+          from: "ci-cd@yourdomain.com"
+          body: "The CI/CD pipeline succeeded for the ${{ env.ENVIRONMENT }} environment."
+
+      - name: Send failure email notification
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.MAIL_HOST }}
+          server_port: ${{ secrets.MAIL_PORT }}
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "❌ Build or Deploy failed on ${{ env.ENVIRONMENT }}"
+          to: "your-email@example.com"
+          from: "ci-cd@yourdomain.com"
+          body: "The CI/CD pipeline failed during build or deployment for the ${{ env.ENVIRONMENT }} environment. Please check logs."
+
