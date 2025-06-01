@@ -34,7 +34,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'       # ✅ مضاف لحل الخطأ
-          java-version: '17'
+          java-version: '21'
 
       - name: Build Project with Maven
         run: mvn clean package
