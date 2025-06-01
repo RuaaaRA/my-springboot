@@ -33,7 +33,7 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'       # ✅ مضاف لحل الخطأ
+          distribution: 'temurin'        # ✅ ضروري
           java-version: '21'
 
       - name: Build Project with Maven
@@ -45,4 +45,5 @@ jobs:
       - name: Deploy to ${{ env.ENVIRONMENT }}
         run: |
           echo "Deploying to $ENVIRONMENT environment"
+          chmod +x ./deploy.sh        # ✅ يعطي صلاحية تنفيذ للسكربت
           ./deploy.sh --env $ENVIRONMENT
