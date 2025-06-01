@@ -1,60 +1,47 @@
 name: CI/CD Pipeline
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Select Environment"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
+    env:
+      ENVIRONMENT: ${{ github.event.inputs.environment }}
+      MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+      MAIL_HOST: ${{ secrets.MAIL_HOST }}
+      MAIL_PORT: ${{ secrets.MAIL_PORT }}
+      DB_USERNAME: ${{ secrets.DB_USERNAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+
     steps:
-    - name: ✅ Checkout Code
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: ☕ Set up JDK 21
-      uses: actions/setup-java@v3
-      with:
-        java-version: '21'
-        distribution: 'temurin'
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
 
-    - name: 🛠️ Make mvnw executable
-      run: chmod +x mvnw
+      - name: Build Project
+        run: mvn clean package
 
-    - name: 🧪 Build & Test with Maven (including Checkstyle)
+      - name: Build Docker Image
+        run: docker build -t my-app:${{ github.sha }} .
 
-      run: ./mvnw clean verify
-
-    - name: 📦 Build Docker Image
-      run: docker build -t springboot-app .
-
-    - name: 🚀 Push to Docker Hub
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      run: |
-        echo "🔐 Logging into Docker Hub..."
-        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-
-        IMAGE_NAME="$DOCKER_USERNAME/springboot-app:latest"
-        echo "🏷️ Tagging image as $IMAGE_NAME"
-        docker tag springboot-app "$IMAGE_NAME"
-
-
-
-
-
-
-
-
-        
-
-
-
-
-
-
-        echo "📤 Pushing image to Docker Hub..."
-        docker push "$IMAGE_NAME"
+      - name: Deploy to ${{ env.ENVIRONMENT }}
+        run: |
+          echo "Deploying to $ENVIRONMENT environment"
+          ./deploy.sh --env $ENVIRONMENT
