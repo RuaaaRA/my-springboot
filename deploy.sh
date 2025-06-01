@@ -1,22 +1,22 @@
 #!/bin/bash
-set -e
+set -e  # إيقاف السكربت عند أول خطأ
 
 ENV=$1
 echo "🚀 Starting deployment to $ENV environment"
 
-# احفظ ID الحاوية القديمة (لو موجودة)
+# نحفظ ID الحاوية القديمة إذا كانت موجودة
 OLD_CONTAINER_ID=$(docker ps -q -f name=my-app-container || true)
 
-# إيقاف وحذف الحاوية القديمة لو موجودة
+# إذا فيه حاوية قديمة شغالة، نوقفها ونحذفها
 if [ -n "$OLD_CONTAINER_ID" ]; then
   echo "🛑 Stopping and removing old container $OLD_CONTAINER_ID"
   docker stop my-app-container
   docker rm my-app-container
 fi
 
-# تشغيل الحاوية الجديدة
+# تشغيل الحاوية الجديدة بالصورة الجديدة
 docker run -d --name my-app-container \
-  -e ENV=$ENV \
+  -e ENV="$ENV" \
   -e MAIL_USERNAME="$MAIL_USERNAME" \
   -e MAIL_PASSWORD="$MAIL_PASSWORD" \
   -e MAIL_HOST="$MAIL_HOST" \
