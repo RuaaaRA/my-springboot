@@ -1,0 +1,23 @@
+{
+  "family": "springboot-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "3072",
+  "executionRoleArn": "arn:aws:iam::535489253193:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::535489253193:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "springboot-container",
+      "image": "535489253193.dkr.ecr.us-east-1.amazonaws.com/spring-boot-app:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080,
+          "protocol": "tcp"
+        }
+      ]
+    }
+  ]
+}

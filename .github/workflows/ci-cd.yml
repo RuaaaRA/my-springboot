@@ -46,4 +46,4 @@ jobs:
         run: |
           echo "Deploying to $ENVIRONMENT environment"
           chmod +x ./deploy.sh
-          ./deploy.sh $ENVIRONMENT
+          ./deploy.sh $ENVIRONMENT || ./rollback.sh $ENVIRONMENT

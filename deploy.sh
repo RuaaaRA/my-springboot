@@ -4,12 +4,19 @@ set -e
 ENV=$1
 echo "Starting deployment to $ENV environment"
 
-# طباعة القيم المستخدمة (أو استخدامها في الأوامر)
-echo "Using mail username: $MAIL_USERNAME"
-echo "Using DB user: $DB_USERNAME"
+# احفظ ID الحاوية القديمة (لو موجودة)
+OLD_CONTAINER_ID=$(docker ps -q -f name=my-app-container || true)
 
-# مثال لنشر Docker container مع تمرير المتغيرات
-docker run -d \
+# إيقاف وحذف الحاوية القديمة لو موجودة
+if [ -n "$OLD_CONTAINER_ID" ]; then
+  echo "Stopping and removing old container $OLD_CONTAINER_ID"
+  docker stop my-app-container
+  docker rm my-app-container
+fi
+
+# تشغيل الحاوية الجديدة
+docker run -d --name my-app-container \
+  -e ENV=$ENV \
   -e MAIL_USERNAME=$MAIL_USERNAME \
   -e MAIL_PASSWORD=$MAIL_PASSWORD \
   -e MAIL_HOST=$MAIL_HOST \
@@ -17,3 +24,5 @@ docker run -d \
   -e DB_USERNAME=$DB_USERNAME \
   -e DB_PASSWORD=$DB_PASSWORD \
   my-app:latest
+
+echo "Deployment completed successfully."
