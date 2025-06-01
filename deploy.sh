@@ -17,12 +17,12 @@ fi
 # تشغيل الحاوية الجديدة
 docker run -d --name my-app-container \
   -e ENV=$ENV \
-  -e MAIL_USERNAME=$MAIL_USERNAME \
-  -e MAIL_PASSWORD=$MAIL_PASSWORD \
-  -e MAIL_HOST=$MAIL_HOST \
-  -e MAIL_PORT=$MAIL_PORT \
-  -e DB_USERNAME=$DB_USERNAME \
-  -e DB_PASSWORD=$DB_PASSWORD \
+  -e MAIL_USERNAME="$MAIL_USERNAME" \
+  -e MAIL_PASSWORD="$MAIL_PASSWORD" \
+  -e MAIL_HOST="$MAIL_HOST" \
+  -e MAIL_PORT="$MAIL_PORT" \
+  -e DB_USERNAME="$DB_USERNAME" \
+  -e DB_PASSWORD="$DB_PASSWORD" \
   my-app:latest
 
-echo "Deployment completed successfully."
+echo "✅ Deployment completed successfully to $ENV"
