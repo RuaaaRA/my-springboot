@@ -46,6 +46,7 @@ jobs:
         run: |
           echo "Deploying to $ENVIRONMENT environment"
           chmod +x ./deploy.sh
+          chmod +x ./rollback.sh
           ./deploy.sh $ENVIRONMENT || ./rollback.sh $ENVIRONMENT
 
       - name: Send success email notification
@@ -73,4 +74,3 @@ jobs:
           to: "your-email@example.com"
           from: "ci-cd@yourdomain.com"
           body: "The CI/CD pipeline failed during build or deployment for the ${{ env.ENVIRONMENT }} environment. Please check logs."
-
