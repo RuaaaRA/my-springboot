@@ -33,17 +33,17 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'        # ✅ ضروري
+          distribution: 'temurin'
           java-version: '21'
 
       - name: Build Project with Maven
         run: mvn clean package
 
       - name: Build Docker Image
-        run: docker build -t my-app:${{ github.sha }} .
+        run: docker build -t my-app:latest .
 
       - name: Deploy to ${{ env.ENVIRONMENT }}
         run: |
           echo "Deploying to $ENVIRONMENT environment"
-          chmod +x ./deploy.sh        # ✅ يعطي صلاحية تنفيذ للسكربت
-          ./deploy.sh --env $ENVIRONMENT
+          chmod +x ./deploy.sh
+          ./deploy.sh $ENVIRONMENT
