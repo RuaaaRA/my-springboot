@@ -25,6 +25,9 @@ jobs:
       MAIL_PORT: ${{ secrets.MAIL_PORT }}
       DB_USERNAME: ${{ secrets.DB_USERNAME }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_HOST: ${{ secrets.DB_HOST }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+      DB_NAME: ${{ secrets.DB_NAME }}
 
     steps:
       - name: Checkout Code
@@ -66,8 +69,8 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "✅ Build & Deploy succeeded on ${{ env.ENVIRONMENT }}"
-          to: "202201654@bethlehem.edu"      # غيّرها لبريدك الحقيقي
-          from: "202201654@bethlehem.edu"    # غيّرها لبريدك الحقيقي أو بريد مخصص للإرسال
+          to: "202201654@bethlehem.edu"
+          from: "202201654@bethlehem.edu"
           body: "The CI/CD pipeline succeeded for the ${{ env.ENVIRONMENT }} environment."
 
       - name: Send failure email notification
@@ -79,6 +82,6 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "❌ Build or Deploy failed on ${{ env.ENVIRONMENT }}"
-          to: "202201654@bethlehem.edu"      # غيّرها لبريدك الحقيقي
+          to: "202201654@bethlehem.edu"
           from: "ci-cd@yourdomain.com"
           body: "The CI/CD pipeline failed during build or deployment for the ${{ env.ENVIRONMENT }} environment. Please check logs."
