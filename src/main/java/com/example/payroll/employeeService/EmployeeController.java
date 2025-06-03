@@ -17,7 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 
 @RestController
-class EmployeeController {
+public  class EmployeeController {
 
   @Autowired
   private EmployeeService employeeService;
