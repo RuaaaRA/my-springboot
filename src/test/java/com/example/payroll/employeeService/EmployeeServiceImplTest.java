@@ -1,27 +1,36 @@
-package com.example.payroll.employeeService;
+package com.example.payroll;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
-import com.example.payroll.departmentService.DepartmentRepository;
+import com.example.payroll.employeeService.Employee;
+import com.example.payroll.employeeService.EmployeeController;
+import com.example.payroll.employeeService.EmployeeDTO;
+import com.example.payroll.employeeService.EmployeeModelAssembler;
+import com.example.payroll.employeeService.EmployeeRepository;
+import com.example.payroll.employeeService.EmployeeServiceImpl;
 import com.example.payroll.security.User;
 import com.example.payroll.security.UserRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.util.Optional;
+import java.util.*;
 
-@ExtendWith(SpringExtension.class)
-public class EmployeeServiceImplTest {
+@SpringBootTest
+class EmployeeTest {
 
     @InjectMocks
     private EmployeeServiceImpl employeeService;
@@ -30,7 +39,7 @@ public class EmployeeServiceImplTest {
     private EmployeeRepository employeeRepository;
 
     @Mock
-    private DepartmentRepository departmentRepository;
+    private EmployeeModelAssembler assembler;
 
     @Mock
     private UserRepository userRepository;
@@ -38,59 +47,145 @@ public class EmployeeServiceImplTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
-    @Mock
-    private EmployeeModelAssembler assembler;
-
-    @Mock
-    private SecurityContext securityContext;
-
-    @Mock
-    private Authentication authentication;
-
     @BeforeEach
-    void setup() {
-        // mock security context
-        SecurityContextHolder.setContext(securityContext);
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void testFindById_AccessAllowed() {
-        // Arrange
-        Long employeeId = 1L;
-        String email = "user@example.com";
-        String role = "ROLE_USER";
+    void testFindAll() {
+        Employee emp = new Employee("John Doe", "Developer", "john@example.com");
+        emp.setId(1L);
+        List<Employee> list = List.of(emp);
 
-        // mock user
-        User mockUser = new User(email, "password", role);
-        mockUser.setId(1L);
+        when(employeeRepository.findAll()).thenReturn(list);
+        when(assembler.toModel(any())).thenReturn(EntityModel.of(new EmployeeDTO()));
 
-        // mock employee
-        Employee mockEmployee = new Employee("Test Name", "Engineer", email);
-        mockEmployee.setId(employeeId);
-        mockEmployee.setUser(mockUser);
+        CollectionModel<EntityModel<EmployeeDTO>> result = employeeService.findAll();
+        assertEquals(1, result.getContent().size());
+    }
 
-        // mock dto and assembler
-        EmployeeDTO employeeDTO = new EmployeeDTO();
-        employeeDTO.setId(employeeId);
-        employeeDTO.setName("Test Name");
-        employeeDTO.setEmail(email);
-        employeeDTO.setRole("Engineer");
+    @Test
+    void testNewEmployee() {
+        EmployeeDTO dto = new EmployeeDTO();
+        dto.setEmail("new@example.com");
+        dto.setName("New");
+        dto.setRole("Dev");
+        dto.setUsername("newuser");
+        dto.setPassword("pass");
 
-        EntityModel<EmployeeDTO> model = EntityModel.of(employeeDTO);
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("newuser");
 
-        // mock behavior
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getName()).thenReturn(email);
+        when(userRepository.findByUsername("newuser")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("pass")).thenReturn("hashedpass");
 
-        when(userRepository.findByUsername(email)).thenReturn(Optional.of(mockUser));
-        when(employeeRepository.findById(employeeId)).thenReturn(Optional.of(mockEmployee));
-        when(assembler.toModel(any(EmployeeDTO.class))).thenReturn(model);
+        Employee savedEmployee = new Employee("New", "Dev", "new@example.com");
+        savedEmployee.setId(1L);
+        savedEmployee.setUser(user);
 
-        // Act
-        ResponseEntity<?> response = employeeService.findById(employeeId);
+        when(employeeRepository.save(any(Employee.class))).thenReturn(savedEmployee);
+        EntityModel<EmployeeDTO> modelWithSelfLink = EntityModel.of(dto,
+                linkTo(methodOn(EmployeeController.class).one(10L)).withSelfRel());
 
-        // Assert
+        when(assembler.toModel(any())).thenReturn(modelWithSelfLink);
+
+        ResponseEntity<?> response = employeeService.newEmployee(dto);
+        assertEquals(201, response.getStatusCodeValue());
+    }
+
+    @Test
+    void testFindById_AsAdmin() {
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("admin");
+        user.setRole("ROLE_ADMIN");
+
+        Employee emp = new Employee("Admin", "Manager", "admin@example.com");
+        emp.setId(2L);
+        emp.setUser(user);
+
+        mockSecurityContext(user);
+
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(user));
+        when(employeeRepository.findById(2L)).thenReturn(Optional.of(emp));
+        when(assembler.toModel(any())).thenReturn(EntityModel.of(new EmployeeDTO()));
+
+        ResponseEntity<?> response = employeeService.findById(2L);
         assertEquals(200, response.getStatusCodeValue());
-        assertEquals(model, response.getBody());
+    }
+
+    @Test
+    void testFindById_Forbidden() {
+        User authUser = new User();
+        authUser.setId(1L);
+        authUser.setUsername("user1");
+        authUser.setRole("ROLE_USER");
+
+        User empUser = new User();
+        empUser.setId(2L);
+
+        Employee emp = new Employee("Someone", "Role", "email@example.com");
+        emp.setId(3L);
+        emp.setUser(empUser);
+
+        mockSecurityContext(authUser);
+
+        when(userRepository.findByUsername("user1")).thenReturn(Optional.of(authUser));
+        when(employeeRepository.findById(3L)).thenReturn(Optional.of(emp));
+
+        ResponseEntity<?> response = employeeService.findById(3L);
+        assertEquals(403, response.getStatusCodeValue());
+    }
+
+    @Test
+    void testFindByEmail_Success() {
+        Employee emp = new Employee("Jane", "Tester", "jane@example.com");
+        emp.setId(5L);
+
+        when(employeeRepository.findByEmail("jane@example.com")).thenReturn(Optional.of(emp));
+        when(assembler.toModel(any())).thenReturn(EntityModel.of(new EmployeeDTO()));
+
+        EntityModel<EmployeeDTO> model = employeeService.findByEmail("jane@example.com");
+        assertNotNull(model);
+    }
+
+    @Test
+    void testSave_UpdateExisting() {
+        Employee existing = new Employee("Old", "OldRole", "old@example.com");
+        existing.setId(10L);
+
+        EmployeeDTO dto = new EmployeeDTO();
+        dto.setName("NewName");
+        dto.setRole("NewRole");
+        dto.setEmail("new@example.com");
+
+        when(employeeRepository.findById(10L)).thenReturn(Optional.of(existing));
+        when(employeeRepository.save(any())).thenReturn(existing);
+        EntityModel<EmployeeDTO> modelWithSelfLink = EntityModel.of(dto,
+                linkTo(methodOn(EmployeeController.class).one(10L)).withSelfRel());
+
+        when(assembler.toModel(any())).thenReturn(modelWithSelfLink);
+
+        ResponseEntity<?> response = employeeService.save(dto, 10L);
+        assertEquals(201, response.getStatusCodeValue());
+    }
+
+    @Test
+    void testDeleteById() {
+        doNothing().when(employeeRepository).deleteById(99L);
+        ResponseEntity<?> response = employeeService.deleteById(99L);
+        assertEquals(204, response.getStatusCodeValue());
+    }
+
+    private void mockSecurityContext(User user) {
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(user.getUsername());
+
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+
+        SecurityContextHolder.setContext(securityContext);
     }
 }
