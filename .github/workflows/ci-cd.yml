@@ -13,21 +13,23 @@ on:
           - staging
           - prod
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+env:
+  ENVIRONMENT: ${{ github.event.inputs.environment }}
+  MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+  MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+  MAIL_HOST: ${{ secrets.MAIL_HOST }}
+  MAIL_PORT: ${{ secrets.MAIL_PORT }}
+  DB_USERNAME: ${{ secrets.DB_USERNAME }}
+  DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+  DB_HOST: ${{ secrets.DB_HOST }}
+  DB_PORT: ${{ secrets.DB_PORT }}
+  DB_NAME: ${{ secrets.DB_NAME }}
 
-    env:
-      ENVIRONMENT: ${{ github.event.inputs.environment }}
-      MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
-      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
-      MAIL_HOST: ${{ secrets.MAIL_HOST }}
-      MAIL_PORT: ${{ secrets.MAIL_PORT }}
-      DB_USERNAME: ${{ secrets.DB_USERNAME }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DB_HOST: ${{ secrets.DB_HOST }}
-      DB_PORT: ${{ secrets.DB_PORT }}
-      DB_NAME: ${{ secrets.DB_NAME }}
+jobs:
+
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
@@ -41,6 +43,15 @@ jobs:
 
       - name: Build Project with Maven
         run: mvn clean package
+
+  deploy:
+    name: Deploy Application
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
       - name: Build Docker Image (latest + previous)
         run: |
@@ -73,8 +84,22 @@ jobs:
           from: "202201654@bethlehem.edu"
           body: "The CI/CD pipeline succeeded for the ${{ env.ENVIRONMENT }} environment."
 
+  rollback:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    if: failure() && needs.deploy.result == 'failure'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Rollback Deployment
+        run: |
+          echo "Rollback triggered due to deployment failure"
+          chmod +x ./rollback.sh
+          ./rollback.sh $ENVIRONMENT
+
       - name: Send failure email notification
-        if: failure()
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: ${{ secrets.MAIL_HOST }}
