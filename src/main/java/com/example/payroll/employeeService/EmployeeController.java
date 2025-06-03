@@ -51,7 +51,16 @@ class EmployeeController {
     return ResponseEntity.ok(employeeService.save(newEmployee, id));    
   }
 
- 
+   @GetMapping("/employees/name/{name}")
+  EntityModel<EmployeeDTO> getEmpname(@PathVariable String name) {
+    return employeeService.findByEmail(name);
+  }
+
   
+  @GetMapping("/employees/name/{name}")
+public EntityModel<EmployeeDTO> getEmpByName(@PathVariable String name) {
+    return employeeService.findByName(name);
+}
+
 
 }

@@ -122,4 +122,13 @@ public class EmployeeServiceImpl implements EmployeeService {
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
+    
+public EntityModel<EmployeeDTO> findByName(String name) {
+    Employee employee = repository.findByName(name)
+        .orElseThrow(() -> new ResourceNotFoundException("Employee with NAME " + name + " not found."));
+    
+    return assembler.toModel(EmployeeMapper.toDTO(employee));
+}
+
 }
