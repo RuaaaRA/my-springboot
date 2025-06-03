@@ -13,12 +13,52 @@ on:
           - staging
           - prod
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+  push:
+    branches:
+      - main
+      - staging
+      - dev
 
+env:
+  ENVIRONMENT: ${{ github.event.inputs.environment || (github.ref_name == 'main' && 'prod') || (github.ref_name == 'staging' && 'staging') || 'dev' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Build Project with Maven
+        run: mvn clean compile
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Run Tests
+        run: mvn test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
     env:
-      ENVIRONMENT: ${{ github.event.inputs.environment }}
+      ENVIRONMENT: ${{ env.ENVIRONMENT }}
       MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
       MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
       MAIL_HOST: ${{ secrets.MAIL_HOST }}
@@ -33,35 +73,50 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-
-      - name: Build Project with Maven
-        run: mvn clean package
-
       - name: Build Docker Image (latest + previous)
         run: |
           docker tag my-app:latest my-app:previous || true
           docker build -t my-app:latest .
 
       - name: Deploy to ${{ env.ENVIRONMENT }}
+        id: deploy_step
         run: |
           echo "Deploying to $ENVIRONMENT environment"
           chmod +x ./deploy.sh
           chmod +x ./rollback.sh
-          if ./deploy.sh $ENVIRONMENT; then
-            echo "Deployment succeeded"
-          else
-            echo "Deployment failed, starting rollback"
-            ./rollback.sh $ENVIRONMENT
-            exit 1
-          fi
+          ./deploy.sh $ENVIRONMENT
 
-      - name: Send success email notification
-        if: success()
+  rollback:
+    if: failure() && needs.deploy.result == 'failure'
+    needs: deploy
+    runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: ${{ env.ENVIRONMENT }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Execute Rollback Script
+        run: |
+          echo "Rolling back deployment for $ENVIRONMENT"
+          chmod +x ./rollback.sh
+          ./rollback.sh $ENVIRONMENT
+
+  notify:
+    needs: [deploy, rollback]
+    runs-on: ubuntu-latest
+    if: always()
+    env:
+      ENVIRONMENT: ${{ env.ENVIRONMENT }}
+      MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+      MAIL_HOST: ${{ secrets.MAIL_HOST }}
+      MAIL_PORT: ${{ secrets.MAIL_PORT }}
+
+    steps:
+      - name: Send Success Email
+        if: needs.deploy.result == 'success'
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: ${{ secrets.MAIL_HOST }}
@@ -73,8 +128,8 @@ jobs:
           from: "202201654@bethlehem.edu"
           body: "The CI/CD pipeline succeeded for the ${{ env.ENVIRONMENT }} environment."
 
-      - name: Send failure email notification
-        if: failure()
+      - name: Send Failure Email
+        if: needs.deploy.result == 'failure'
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: ${{ secrets.MAIL_HOST }}
@@ -84,4 +139,4 @@ jobs:
           subject: "❌ Build or Deploy failed on ${{ env.ENVIRONMENT }}"
           to: "202201654@bethlehem.edu"
           from: "ci-cd@yourdomain.com"
-          body: "The CI/CD pipeline failed during build or deployment for the ${{ env.ENVIRONMENT }} environment. Please check logs."
+          body: "The CI/CD pipeline failed during build or deployment for the ${{ env.ENVIRONMENT }} environment. Rollback was triggered if available. Please check logs."
