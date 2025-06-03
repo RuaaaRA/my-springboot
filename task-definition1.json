@@ -9,7 +9,7 @@
   "containerDefinitions": [
     {
       "name": "springboot-container",
-      "image": "535489253193.dkr.ecr.us-east-1.amazonaws.com/spring-boot-app:la",
+      "image": "535489253193.dkr.ecr.us-east-1.amazonaws.com/spring-pp:la",
       "essential": true,
       "portMappings": [
         {
