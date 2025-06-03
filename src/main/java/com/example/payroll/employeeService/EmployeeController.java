@@ -53,7 +53,7 @@ class EmployeeController {
 
   
   
-  @GetMapping("/employees/name/{name}")
+ @GetMapping("/employees/name/{name}")
 public EntityModel<EmployeeDTO> getEmpByName(@PathVariable String name) {
     return employeeService.findByName(name);
 }
